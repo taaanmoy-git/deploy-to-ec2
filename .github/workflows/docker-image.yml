@@ -1,0 +1,52 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "docker-to-ec2" ]
+  pull_request:
+    branches: [ "docker-to-ec2" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build Project
+        run: mvn clean install -DskipTests
+
+      - name: Login to Docker Hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker Image
+        run: docker build -t integrationninjas/springboot-example:latest .
+
+      - name: Push Docker Image to Docker Hub
+        run: docker push integrationninjas/springboot-example:latest
+
+  deploy:
+    needs: build
+    runs-on: [aws-ec2]  # self-hosted EC2 runner label
+
+    steps:
+      - name: Login to Docker Hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Pull image from Docker Hub
+        run: docker pull integrationninjas/springboot-example:latest
+
+      - name: Stop and remove old container if exists
+        run: |
+          docker ps -q --filter "name=springboot-example-container" | grep -q . && \
+          docker stop springboot-example-container && docker rm springboot-example-container || echo "No existing container"
+
+      - name: Run Docker container
+        run: docker run -d --name springboot-example-container -p 8080:8080 integrationninjas/springboot-example:latest

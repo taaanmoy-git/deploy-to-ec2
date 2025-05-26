@@ -17,6 +17,6 @@ public class MyController {
         emp.put("id", 101);
         emp.put("name", "John Doe");
         emp.put("age", 30);
-        return emp; // this will return emd 
+        return emp; // this will return emd data
     }
 }

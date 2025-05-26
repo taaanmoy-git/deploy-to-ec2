@@ -8,6 +8,6 @@ public class DockerToEc2Application {
 
 	public static void main(String[] args) {
 		SpringApplication.run(DockerToEc2Application.class, args);
-	}
+	}//
 
 }
